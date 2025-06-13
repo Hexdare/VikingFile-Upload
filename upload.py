@@ -47,23 +47,19 @@ def display_progress(uploaded, total, start_time):
     if total == 0:
         return
         
-    # --- Calculations ---
     percent = uploaded / total
     elapsed_time = time.monotonic() - start_time
     speed = uploaded / elapsed_time if elapsed_time > 0 else 0
     eta = (total - uploaded) / speed if speed > 0 else 0
 
-    # --- Use fixed-width formatting for all text elements for stability ---
     size_str = f"{format_size(uploaded):>9s}/{format_size(total):<9s}"
     speed_str = f"{format_size(speed)+'/s':<11s}"
-    percent_str = f"{percent:6.1%}" # e.g., " 50.1%"
-    eta_str = f"{int(eta // 60):>3}m {int(eta % 60):02}s" # e.g., "  6m 02s"
+    percent_str = f"{percent:6.1%}"
+    eta_str = f"{int(eta // 60):>3}m {int(eta % 60):02}s"
     
-    # --- Define characters for the bar style ---
     filled_char = '█'
     empty_char = '⣀'
     
-    # --- Building the Bar ---
     static_text = f"Uploading... || {percent_str} {size_str} @ {speed_str} ETA: {eta_str}"
     bar_length = terminal_width - len(static_text) - 1
     bar_length = max(10, bar_length)
@@ -72,14 +68,12 @@ def display_progress(uploaded, total, start_time):
     
     bar = Ansi.GREEN + filled_char * filled_length + Ansi.RESET + empty_char * (bar_length - filled_length)
     
-    # --- Assembling the full detailed line with stable components ---
     line = (f"{Ansi.YELLOW}Uploading... {Ansi.RESET}"
             f"|{bar}| {percent_str} "
             f"{Ansi.CYAN}{size_str}{Ansi.RESET} @ "
             f"{Ansi.GREEN}{speed_str}{Ansi.RESET} "
             f"ETA: {eta_str}")
     
-    # --- Printing ---
     sys.stdout.write(f"\r{line.ljust(terminal_width)}")
     sys.stdout.flush()
 
@@ -165,8 +159,9 @@ def upload_file(file_path, user_hash=""):
     if not upload_server_url:
         return None
 
+    # The file path existence is checked here, covering both interactive and argument-based input.
     if not os.path.exists(file_path):
-        print(f"Error: File not found at '{file_path}'")
+        print(f"\n{Ansi.YELLOW}Error: File not found at '{file_path}'{Ansi.RESET}")
         return None
 
     fields = {'user': user_hash}
@@ -178,15 +173,12 @@ def upload_file(file_path, user_hash=""):
     file_size = os.path.getsize(file_path)
     start_time = time.monotonic()
 
-    # --- FRAME RATE LIMITER for smooth UI without slowing the upload ---
     last_update_time = 0
-    # Update the visual bar at most 20 times per second (1/20 = 0.05s)
     update_interval = 0.05 
 
     def progress_callback(uploaded, total):
         nonlocal last_update_time
         current_time = time.monotonic()
-        # Check if enough time has passed since the last UI update
         if current_time - last_update_time > update_interval:
             display_progress(uploaded, total, start_time)
             last_update_time = current_time
@@ -194,7 +186,6 @@ def upload_file(file_path, user_hash=""):
     body_generator = multipart_body_generator(fields, files, boundary, progress_callback)
     content_length = calculate_total_size(fields, files, boundary)
     
-    # Draw initial bar at 0%
     display_progress(0, file_size, start_time)
 
     req = request.Request(upload_server_url, data=body_generator)
@@ -203,7 +194,6 @@ def upload_file(file_path, user_hash=""):
 
     try:
         with request.urlopen(req) as response:
-            # Draw final bar at 100% to ensure it completes
             display_progress(file_size, file_size, start_time)
             print() 
             if response.status == 200:
@@ -221,16 +211,38 @@ def upload_file(file_path, user_hash=""):
         print(f"\nURL Error during upload: {e.reason}")
         return None
 
+# --- MODIFIED SECTION: Handles both command-line arguments and interactive input ---
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: python {os.path.basename(__file__)} <path_to_file> [user_hash]")
+    
+    file_to_upload = ""
+    user_hash_arg = ""
+
+    # Mode 1: Check for command-line arguments (for scripting and non-interactive use)
+    if len(sys.argv) > 1:
+        file_to_upload = sys.argv[1]
+        if len(sys.argv) > 2:
+            user_hash_arg = sys.argv[2]
+            
+    # Mode 2: If no arguments were given, switch to interactive mode
+    else:
+        try:
+            prompt_arrow = f"{Ansi.CYAN}▶{Ansi.RESET}"
+            file_to_upload = input(f"{prompt_arrow} Enter the path to the file: ")
+            user_hash_arg = input(f"{prompt_arrow} Enter user hash (optional, press Enter to skip): ")
+        except KeyboardInterrupt:
+            # Handle Ctrl+C gracefully during input
+            print("\n\nUpload cancelled by user.")
+            sys.exit(0)
+
+    # Validate that we have a file path before proceeding
+    if not file_to_upload.strip():
+        print(f"\n{Ansi.YELLOW}Error: No file path provided. Aborting.{Ansi.RESET}")
         sys.exit(1)
 
-    file_to_upload = sys.argv[1]
-    user_hash_arg = sys.argv[2] if len(sys.argv) > 2 else ""
-
-    download_link = upload_file(file_to_upload, user_hash_arg)
+    # Call the main upload function with the collected details
+    download_link = upload_file(file_to_upload.strip(), user_hash_arg.strip())
 
     if download_link:
         print()
         display_success_message(download_link)
+
