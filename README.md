@@ -21,6 +21,21 @@ Paste this command into your terminal to instantly run the uploader:
 ```bash
 python3 <(curl -sL "https://raw.githubusercontent.com/Hexdare/VikingFile-Upload/main/upload.py")
 ```
+
+### OR
+
+```bash
+python3 <(curl -sL "https://raw.githubusercontent.com/Hexdare/VikingFile-Upload/main/upload.py") /path/to/your/file.zip
+```
+
+Replace `/path/to/your/file.zip` with the actual path to the file you want to upload.
+
+## **Uploading with a User Hash**
+To associate the upload with your account, provide your user hash as a second argument:
+
+```bash
+python3 <(curl -sL "https://raw.githubusercontent.com/Hexdare/VikingFile-Upload/main/upload.py") /path/to/your/file.zip "YOUR_USER_HASH"
+```
 ---
 
 ## 🙌 Credits
