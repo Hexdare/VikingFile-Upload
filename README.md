@@ -36,6 +36,14 @@ To associate the upload with your account, provide your user hash as a second ar
 ```bash
 python3 <(curl -sL "https://raw.githubusercontent.com/Hexdare/VikingFile-Upload/main/upload.py") /path/to/your/file.zip "YOUR_USER_HASH"
 ```
+## **Uploading to a folder with a User Hash**
+To Upload to a folder on your account use this command 
+
+```bash
+python3 <(curl -sL "https://raw.githubusercontent.com/Hexdare/VikingFile-Upload/main/upload.py") /path/to/your/file.zip "YOUR_USER_HASH" MyFiles
+```
+Replace `Myfiles` with the actual Folder name or path to folder
+
 ---
 
 ## 🙌 Credits
