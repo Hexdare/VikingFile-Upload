@@ -153,7 +153,7 @@ def multipart_body_generator(fields, files, boundary, progress_callback=None):
         yield '\r\n'.encode(encoder)
     yield f'--{boundary}--\r\n'.encode(encoder)
 
-def upload_file(file_path, user_hash=""):
+def upload_file(file_path, user_hash="", path=""):
     """Uploads a file to VikingFile and returns the download link."""
     upload_server_url = get_upload_server()
     if not upload_server_url:
@@ -164,7 +164,7 @@ def upload_file(file_path, user_hash=""):
         print(f"\n{Ansi.YELLOW}Error: File not found at '{file_path}'{Ansi.RESET}")
         return None
 
-    fields = {'user': user_hash}
+    fields = {'user': user_hash, 'path': path}
     files = {'file': file_path}
     
     boundary = f'----------{uuid4().hex}'
@@ -216,12 +216,15 @@ if __name__ == "__main__":
     
     file_to_upload = ""
     user_hash_arg = ""
+    path_arg = ""
 
     # Mode 1: Check for command-line arguments (for scripting and non-interactive use)
     if len(sys.argv) > 1:
         file_to_upload = sys.argv[1]
         if len(sys.argv) > 2:
             user_hash_arg = sys.argv[2]
+        if len(sys.argv) > 3:
+            path_arg = sys.argv[3]
             
     # Mode 2: If no arguments were given, switch to interactive mode
     else:
@@ -229,6 +232,7 @@ if __name__ == "__main__":
             prompt_arrow = f"{Ansi.CYAN}▶{Ansi.RESET}"
             file_to_upload = input(f"{prompt_arrow} Enter the path to the file: ")
             user_hash_arg = input(f"{prompt_arrow} Enter user hash (optional, press Enter to skip): ")
+            path_arg = input(f"{prompt_arrow} Enter the path on VikingFile (optional, press Enter to skip): ")
         except KeyboardInterrupt:
             # Handle Ctrl+C gracefully during input
             print("\n\nUpload cancelled by user.")
@@ -240,9 +244,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Call the main upload function with the collected details
-    download_link = upload_file(file_to_upload.strip(), user_hash_arg.strip())
+    download_link = upload_file(file_to_upload.strip(), user_hash_arg.strip(), path_arg.strip())
 
     if download_link:
         print()
         display_success_message(download_link)
-
